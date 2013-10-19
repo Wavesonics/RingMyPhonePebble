@@ -9,9 +9,11 @@ PBL_APP_INFO(MY_UUID, "Ring My Phone", "Dark Rock Studios", 1 , 0/* App version 
 
 Window window;
 
-TextLayer ringTextLayer;
 TextLayer statusTextLayer;
-TextLayer silenceTextLayer;
+
+ActionBarLayer actionBar;
+HeapBitmap bitmapRing;
+HeapBitmap bitmapSilence;
 
 static bool callbacks_registered = false;
 static AppMessageCallbacksNode app_callbacks;
@@ -44,38 +46,6 @@ void down_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
 
 	text_layer_set_text(&statusTextLayer, "Silencing");	
 	send_cmd( CMD_STOP );
-}
-
-
-void select_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
-  (void)recognizer;
-  (void)window;
-
-  
-}
-
-
-void select_long_click_handler(ClickRecognizerRef recognizer, Window *window) {
-  (void)recognizer;
-  (void)window;
-
-}
-
-
-// This usually won't need to be modified
-
-void click_config_provider(ClickConfig **config, Window *window) {
-  (void)window;
-
-  config[BUTTON_ID_SELECT]->click.handler = (ClickHandler) select_single_click_handler;
-
-  config[BUTTON_ID_SELECT]->long_click.handler = (ClickHandler) select_long_click_handler;
-
-  config[BUTTON_ID_UP]->click.handler = (ClickHandler) up_single_click_handler;
-  config[BUTTON_ID_UP]->click.repeat_interval_ms = 100;
-
-  config[BUTTON_ID_DOWN]->click.handler = (ClickHandler) down_single_click_handler;
-  config[BUTTON_ID_DOWN]->click.repeat_interval_ms = 100;
 }
 
 // App message callbacks
@@ -126,46 +96,67 @@ static void send_cmd(uint8_t cmd) {
 
 // Standard app initialisation
 
+void click_config_provider(ClickConfig **config, void *context)
+{
+  config[BUTTON_ID_DOWN]->click.handler = (ClickHandler) down_single_click_handler;
+  config[BUTTON_ID_UP]->click.handler = (ClickHandler) up_single_click_handler;
+}
+
+void window_load(Window *window)
+{
+	// Initialize the action bar:
+	action_bar_layer_init(&actionBar);
+	// Associate the action bar with the window:
+	action_bar_layer_add_to_window(&actionBar, window);
+	// Set the click config provider:
+	action_bar_layer_set_click_config_provider(&actionBar,
+											   click_config_provider);
+	// Set the icons:
+	heap_bitmap_init( &bitmapRing, RESOURCE_ID_IMAGE_RING_ICON );
+	heap_bitmap_init( &bitmapSilence, RESOURCE_ID_IMAGE_SILENCE_ICON );
+	
+	action_bar_layer_set_icon(&actionBar, BUTTON_ID_UP, &bitmapRing.bmp);
+	action_bar_layer_set_icon(&actionBar, BUTTON_ID_DOWN, &bitmapSilence.bmp);
+}
+
+void window_unload(Window *window)
+{
+	heap_bitmap_deinit( &bitmapRing );
+	heap_bitmap_deinit( &bitmapSilence );
+}
+
 void handle_init(AppContextRef ctx) {
   (void)ctx;
 
+	resource_init_current_app(&APP_RESOURCES);
+	
 	window_init(&window, "Ring My Phone");
 	window_stack_push(&window, true /* Animated */);
 	
-	int16_t aThird = window.layer.frame.size.h / 3;
+	int16_t aThird = window.layer.frame.size.h / 3;	
 	
 	GRect textFrame;
 	textFrame.origin.x = 0;
 	textFrame.origin.y = 0;
 	textFrame.size.w = window.layer.frame.size.w;
 	textFrame.size.h = aThird;
-		
-	text_layer_init(&ringTextLayer, textFrame);
-	text_layer_set_text(&ringTextLayer, "Ring ->");
-	text_layer_set_text_alignment(&ringTextLayer, GTextAlignmentRight);
-	text_layer_set_font(&ringTextLayer, fonts_get_system_font(FONT_KEY_GOTHIC_28));
-	layer_add_child(&window.layer, &ringTextLayer.layer);
 	
-	textFrame.origin.y += aThird;
+	textFrame.origin.y = aThird;
 	text_layer_init(&statusTextLayer, textFrame);
 	text_layer_set_text(&statusTextLayer, "Ready.");
-	text_layer_set_text_alignment(&statusTextLayer, GTextAlignmentRight);
-	text_layer_set_font(&statusTextLayer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
+	text_layer_set_text_alignment(&statusTextLayer, GTextAlignmentLeft);
+	text_layer_set_font(&statusTextLayer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
 	layer_add_child(&window.layer, &statusTextLayer.layer);
-	
-	textFrame.origin.y += aThird;
-	text_layer_init(&silenceTextLayer, textFrame);
-	text_layer_set_text(&silenceTextLayer, "Silence ->");
-	text_layer_set_text_alignment(&silenceTextLayer, GTextAlignmentRight);
-	text_layer_set_font(&silenceTextLayer, fonts_get_system_font(FONT_KEY_GOTHIC_28));
-	layer_add_child(&window.layer, &silenceTextLayer.layer);
 	
 	register_callbacks();
 	
-	// Attach our desired button functionality
-	window_set_click_config_provider(&window, (ClickConfigProvider) click_config_provider);
+	WindowHandlers handlers = {
+		.load = window_load,
+		.unload = window_unload
+	};
+	
+	window_set_window_handlers(&window, handlers);
 }
-
 
 void pbl_main(void *params) {
   PebbleAppHandlers handlers = {
