@@ -7,13 +7,19 @@
 #define MY_UUID { 0xD1, 0xAD, 0x93, 0x6B, 0x17, 0x68, 0x46, 0x0E, 0x88, 0x5A, 0xD7, 0x96, 0x89, 0x6A, 0x38, 0xC2 }
 PBL_APP_INFO(MY_UUID, "Ring My Phone", "Dark Rock Studios", 1 , 0/* App version */, RESOURCE_ID_IMAGE_MENU_ICON, APP_INFO_STANDARD_APP);
 
+const int STATUS_RESET_TIME = 5000;
+const int STATUS_COOKIE = 1;
+
 Window window;
 
 TextLayer statusTextLayer;
 
+AppContextRef appContext;
 ActionBarLayer actionBar;
 HeapBitmap bitmapRing;
 HeapBitmap bitmapSilence;
+
+AppTimerHandle statusResetTimer = APP_TIMER_INVALID_HANDLE;
 
 static bool callbacks_registered = false;
 static AppMessageCallbacksNode app_callbacks;
@@ -55,7 +61,7 @@ static void app_send_failed(DictionaryIterator* failed, AppMessageResult reason,
 
 static void app_received_msg(DictionaryIterator* received, void* context) {
 	vibes_short_pulse();
-	text_layer_set_text(&statusTextLayer, "Done.");	
+	text_layer_set_text(&statusTextLayer, "Done.");
 }
 
 bool register_callbacks() {
@@ -78,20 +84,48 @@ bool register_callbacks() {
 	return callbacks_registered;
 }
 
-static void send_cmd(uint8_t cmd) {
-  Tuplet value = TupletInteger(CMD_KEY, cmd);
-  
-  DictionaryIterator *iter;
-  app_message_out_get(&iter);
-  
-  if (iter == NULL)
-    return;
-  
-  dict_write_tuplet(iter, &value);
-  dict_write_end(iter);
-  
-  app_message_out_send();
-  app_message_out_release();
+void cancel_reset_timer()
+{
+	if (statusResetTimer != APP_TIMER_INVALID_HANDLE)
+	{
+		if (app_timer_cancel_event(appContext, statusResetTimer))
+		{
+			statusResetTimer = APP_TIMER_INVALID_HANDLE;
+		}
+	}
+}
+
+void start_reset_timer()
+{
+	cancel_reset_timer();
+	statusResetTimer = app_timer_send_event(appContext, STATUS_RESET_TIME, STATUS_COOKIE);
+}
+
+static void send_cmd(uint8_t cmd)
+{
+	start_reset_timer();
+		
+	Tuplet value = TupletInteger(CMD_KEY, cmd);
+	
+	DictionaryIterator *iter;
+	app_message_out_get(&iter);
+	
+	if (iter == NULL)
+		return;
+	
+	dict_write_tuplet(iter, &value);
+	dict_write_end(iter);
+	
+	app_message_out_send();
+	app_message_out_release();
+}
+
+void handle_timer(AppContextRef app_ctx, AppTimerHandle handle, uint32_t cookie)
+{
+    (void) app_ctx;
+    (void) handle;
+    
+	text_layer_set_text(&statusTextLayer, "Ready.");
 }
 
 // Standard app initialisation
@@ -128,6 +162,7 @@ void window_unload(Window *window)
 void handle_init(AppContextRef ctx) {
   (void)ctx;
 
+	appContext = ctx;
 	resource_init_current_app(&APP_RESOURCES);
 	
 	window_init(&window, "Ring My Phone");
@@ -158,9 +193,17 @@ void handle_init(AppContextRef ctx) {
 	window_set_window_handlers(&window, handlers);
 }
 
+void handle_deinit(AppContextRef app_ctx)
+{
+	cancel_reset_timer();
+	appContext = NULL;
+}
+
 void pbl_main(void *params) {
   PebbleAppHandlers handlers = {
     .init_handler = &handle_init,
+	.deinit_handler = &handle_deinit,
+	.timer_handler = &handle_timer,
 	.messaging_info = {
       .buffer_sizes = {
         .inbound = 256,
