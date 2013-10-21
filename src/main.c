@@ -24,6 +24,13 @@ AppTimerHandle statusResetTimer = APP_TIMER_INVALID_HANDLE;
 static bool callbacks_registered = false;
 static AppMessageCallbacksNode app_callbacks;
 
+const char * const WINDOW_TITLE = "Ring My Phone";
+const char * const STATUS_READY = "Ready";
+const char * const STATUS_DONE = "Done";
+const char * const STATUS_RINGING = "Ringing";
+const char * const STATUS_SILENCING = "Silencing";
+const char * const STATUS_FAILED = "Failed :(";
+
 enum {
   CMD_KEY = 0x0, // TUPLE_INTEGER
 };
@@ -34,37 +41,45 @@ enum {
 };
 
 static void send_cmd(uint8_t cmd);
+void start_reset_timer();
 
 // Modify these common button handlers
 
-void up_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
+void up_single_click_handler(ClickRecognizerRef recognizer, Window *window)
+{
   (void)recognizer;
   (void)window;
 
-	text_layer_set_text(&statusTextLayer, "Ringing");
+	text_layer_set_text(&statusTextLayer, STATUS_RINGING);
 	send_cmd( CMD_START );
 }
 
 
-void down_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
+void down_single_click_handler(ClickRecognizerRef recognizer, Window *window)
+{
   (void)recognizer;
   (void)window;
 
-	text_layer_set_text(&statusTextLayer, "Silencing");	
+	text_layer_set_text(&statusTextLayer, STATUS_SILENCING);	
 	send_cmd( CMD_STOP );
 }
 
 // App message callbacks
-static void app_send_failed(DictionaryIterator* failed, AppMessageResult reason, void* context) {
-	text_layer_set_text(&statusTextLayer, "Failed :(");	
+static void app_send_failed(DictionaryIterator* failed, AppMessageResult reason, void* context)
+{
+	text_layer_set_text(&statusTextLayer, STATUS_FAILED);
+	start_reset_timer();
 }
 
-static void app_received_msg(DictionaryIterator* received, void* context) {
+static void app_received_msg(DictionaryIterator* received, void* context)
+{
 	vibes_short_pulse();
-	text_layer_set_text(&statusTextLayer, "Done.");
+	text_layer_set_text(&statusTextLayer, STATUS_DONE);
+	start_reset_timer();
 }
 
-bool register_callbacks() {
+bool register_callbacks()
+{
 	if (callbacks_registered) {
 		if (app_message_deregister_callbacks(&app_callbacks) == APP_MSG_OK)
 			callbacks_registered = false;
@@ -125,7 +140,7 @@ void handle_timer(AppContextRef app_ctx, AppTimerHandle handle, uint32_t cookie)
     (void) app_ctx;
     (void) handle;
     
-	text_layer_set_text(&statusTextLayer, "Ready.");
+	text_layer_set_text(&statusTextLayer, STATUS_READY);
 }
 
 // Standard app initialisation
@@ -159,13 +174,14 @@ void window_unload(Window *window)
 	heap_bitmap_deinit( &bitmapSilence );
 }
 
-void handle_init(AppContextRef ctx) {
+void handle_init(AppContextRef ctx)
+{
   (void)ctx;
 
 	appContext = ctx;
 	resource_init_current_app(&APP_RESOURCES);
 	
-	window_init(&window, "Ring My Phone");
+	window_init(&window, WINDOW_TITLE);
 	window_stack_push(&window, true /* Animated */);
 	
 	int16_t aThird = window.layer.frame.size.h / 3;	
@@ -178,7 +194,7 @@ void handle_init(AppContextRef ctx) {
 	
 	textFrame.origin.y = aThird;
 	text_layer_init(&statusTextLayer, textFrame);
-	text_layer_set_text(&statusTextLayer, "Ready.");
+	text_layer_set_text(&statusTextLayer, STATUS_READY);
 	text_layer_set_text_alignment(&statusTextLayer, GTextAlignmentLeft);
 	text_layer_set_font(&statusTextLayer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
 	layer_add_child(&window.layer, &statusTextLayer.layer);
@@ -199,7 +215,8 @@ void handle_deinit(AppContextRef app_ctx)
 	appContext = NULL;
 }
 
-void pbl_main(void *params) {
+void pbl_main(void *params)
+{
   PebbleAppHandlers handlers = {
     .init_handler = &handle_init,
 	.deinit_handler = &handle_deinit,
