@@ -1,0 +1,35 @@
+{
+    "versionLabel": "1.1",
+    "uuid": "D1AD936B-1768-460E-885A-D796896A38C2",
+    "appKeys": {},
+    "longName": "RingMyPhone",
+    "versionCode": 2,
+    "capabilities": [
+        ""
+    ],
+    "shortName": "RingMyPhone",
+    "companyName": "Dark Rock Studios",
+    "watchapp": {
+        "watchface": false
+    },
+    "resources": {
+        "media": [
+            {
+                "menuIcon": true,
+                "type": "png",
+                "name": "IMAGE_MENU_ICON",
+                "file": "images/menu_icon_ringmyphone.png"
+            },
+            {
+                "type": "png",
+                "name": "IMAGE_RING_ICON",
+                "file": "images/icon_ring.png"
+            },
+            {
+                "type": "png",
+                "name": "IMAGE_SILENCE_ICON",
+                "file": "images/icon_silence.png"
+            }
+        ]
+    }
+}
