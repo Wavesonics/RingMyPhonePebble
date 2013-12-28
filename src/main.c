@@ -1,9 +1,6 @@
 #include <pebble.h>
 
-//#define MY_UUID { 0xD1, 0xAD, 0x93, 0x6B, 0x17, 0x68, 0x46, 0x0E, 0x88, 0x5A, 0xD7, 0x96, 0x89, 0x6A, 0x38, 0xC2 }
-//PBL_APP_INFO(MY_UUID, "Ring My Phone", "Dark Rock Studios", 1 , 0/* App version */, RESOURCE_ID_IMAGE_MENU_ICON, APP_INFO_STANDARD_APP);
-
-const uint32_t  STATUS_RESET_TIME = 5000;
+const uint32_t  STATUS_RESET_TIME = 3000;
 
 static Window* window;
 
@@ -35,17 +32,19 @@ static void send_cmd(uint8_t cmd);
 void start_reset_timer();
 void reset_timer_callback( void* data );
 
-// Modify these common button handlers
-
+// Button handlers
 void up_single_click_handler( ClickRecognizerRef recognizer, void *context )
 {
+	//APP_LOG(APP_LOG_LEVEL_INFO, "Send ring command");
+	
 	text_layer_set_text(statusTextLayer, STATUS_RINGING);
 	send_cmd( CMD_START );
 }
 
-
 void down_single_click_handler( ClickRecognizerRef recognizer, void *context )
 {
+	//APP_LOG(APP_LOG_LEVEL_INFO, "Send silence command");
+	
 	text_layer_set_text(statusTextLayer, STATUS_SILENCING);	
 	send_cmd( CMD_STOP );
 }
@@ -53,13 +52,16 @@ void down_single_click_handler( ClickRecognizerRef recognizer, void *context )
 // App message callbacks
 void out_sent_handler(DictionaryIterator *sent, void *context)
 {
+	//APP_LOG(APP_LOG_LEVEL_INFO, "command sent");
+	
 	vibes_short_pulse();
-	text_layer_set_text(statusTextLayer, STATUS_DONE);
 	start_reset_timer();
 }
 
 void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, void *context)
 {
+	APP_LOG(APP_LOG_LEVEL_WARNING, "command send failed");
+	
 	text_layer_set_text(statusTextLayer, STATUS_FAILED);
 	start_reset_timer();
 }
@@ -127,8 +129,6 @@ void click_config_provider( void *context )
 
 void window_load( Window *window )
 {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "window_load");
-	
 	// Initialize the action bar:
 	actionBar = action_bar_layer_create();
 	// Associate the action bar with the window:
@@ -155,8 +155,6 @@ void window_unload(Window *window)
 
 void handle_init()
 {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "handle_init()");
-	
 	window = window_create();
 	
 	Layer *window_layer = window_get_root_layer(window);
@@ -197,11 +195,13 @@ void handle_deinit()
 
 int main(void)
 {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "main()");
+	APP_LOG(APP_LOG_LEVEL_INFO, "RingMyPhone app started");
 	
 	handle_init();
 	app_event_loop();
 	handle_deinit();
+	
+	APP_LOG(APP_LOG_LEVEL_INFO, "RingMyPhone app exiting");
 	
 	return 0;
 }
