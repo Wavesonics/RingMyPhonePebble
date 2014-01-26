@@ -20,12 +20,12 @@ const char * const STATUS_SILENCING = "Silencing";
 const char * const STATUS_FAILED = "Failed :(";
 
 enum {
-  CMD_KEY = 0x0, // TUPLE_INTEGER
+  CMD_KEY = 0x1, // TUPLE_INTEGER
 };
 
 enum {
-  CMD_START = 0x01,
-  CMD_STOP = 0x02,
+  CMD_START = 0x02,
+  CMD_STOP = 0x03,
 };
 
 static void send_cmd(uint8_t cmd);
