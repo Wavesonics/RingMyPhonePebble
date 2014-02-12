@@ -24,8 +24,8 @@ enum {
 };
 
 enum {
-  CMD_START = 0x02,
-  CMD_STOP = 0x03,
+  CMD_START = 0x01,
+  CMD_STOP = 0x02,
 };
 
 static void send_cmd(uint8_t cmd);
