@@ -13,11 +13,7 @@ GBitmap* bitmapSilence;
 AppTimer* statusResetTimer;
 
 const char * const WINDOW_TITLE = "Ring My Phone";
-const char * const STATUS_READY = "Ready";
 const char * const STATUS_DONE = "Done";
-const char * const STATUS_RINGING = "Ringing";
-const char * const STATUS_SILENCING = "Silencing";
-const char * const STATUS_FAILED = "Failed :(";
 
 enum {
   CMD_KEY = 0x1, // TUPLE_INTEGER
@@ -32,12 +28,49 @@ static void send_cmd(uint8_t cmd);
 void start_reset_timer();
 void reset_timer_callback( void* data );
 
+// Status text helpers
+void set_status_ready()
+{
+	const char * const STATUS_READY = "Ready";
+#if defined(PBL_COLOR)
+	text_layer_set_text_color(statusTextLayer, GColorLimerick);
+#endif
+	text_layer_set_text(statusTextLayer, STATUS_READY);
+}
+
+void set_status_ringing()
+{
+	const char * const STATUS_RINGING = "Ringing";
+#if defined(PBL_COLOR)
+	text_layer_set_text_color(statusTextLayer, GColorOrange);
+#endif
+	text_layer_set_text(statusTextLayer, STATUS_RINGING);
+}
+
+void set_status_silencing()
+{
+	const char * const STATUS_SILENCING = "Silencing";
+#if defined(PBL_COLOR)
+	text_layer_set_text_color(statusTextLayer, GColorLiberty);
+#endif
+	text_layer_set_text(statusTextLayer, STATUS_SILENCING);
+}
+
+void set_status_failed()
+{
+	const char * const STATUS_FAILED = "Failed :(";
+#if defined(PBL_COLOR)
+	text_layer_set_text_color(statusTextLayer, GColorRed);
+#endif
+	text_layer_set_text(statusTextLayer, STATUS_FAILED);
+}
+
 // Button handlers
 void up_single_click_handler( ClickRecognizerRef recognizer, void *context )
 {
 	//APP_LOG(APP_LOG_LEVEL_INFO, "Send ring command");
 	
-	text_layer_set_text(statusTextLayer, STATUS_RINGING);
+	set_status_ringing();
 	send_cmd( CMD_START );
 }
 
@@ -45,7 +78,7 @@ void down_single_click_handler( ClickRecognizerRef recognizer, void *context )
 {
 	//APP_LOG(APP_LOG_LEVEL_INFO, "Send silence command");
 	
-	text_layer_set_text(statusTextLayer, STATUS_SILENCING);	
+	set_status_silencing();
 	send_cmd( CMD_STOP );
 }
 
@@ -62,7 +95,7 @@ void out_failed_handler(DictionaryIterator *failed, AppMessageResult reason, voi
 {
 	APP_LOG(APP_LOG_LEVEL_WARNING, "command send failed");
 	
-	text_layer_set_text(statusTextLayer, STATUS_FAILED);
+	set_status_failed();
 	start_reset_timer();
 }
 
@@ -118,7 +151,7 @@ static void send_cmd(uint8_t cmd)
 
 void reset_timer_callback( void* data )
 {
-	text_layer_set_text(statusTextLayer, STATUS_READY);
+	set_status_ready();
 }
 
 void click_config_provider( void *context )
@@ -160,21 +193,24 @@ void handle_init()
 	Layer *window_layer = window_get_root_layer(window);
 	GRect windowFrame = layer_get_frame(window_layer);
 	
-	int16_t aThird = windowFrame.size.h / 3;	
+	GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
+	GSize textSize = graphics_text_layout_get_content_size("Ready", font, windowFrame, GTextOverflowModeTrailingEllipsis, GTextAlignmentLeft);
+	textSize.h += 5;
 	
-	GRect textFrame;
-	textFrame.origin.x = 0;
-	textFrame.origin.y = 0;
+	GRect textFrame = layer_get_bounds(window_layer);
+	textFrame.origin.x = 6;
+	textFrame.origin.y =  (windowFrame.size.h/2) - (textSize.h/2);
 	textFrame.size.w = windowFrame.size.w;
-	textFrame.size.h = aThird;
+	textFrame.size.h = textSize.h;
 	
-	textFrame.origin.y = aThird;
 	statusTextLayer = text_layer_create( textFrame );
 	
-	text_layer_set_text(statusTextLayer, STATUS_READY);
+	text_layer_set_text(statusTextLayer, "---");
 	text_layer_set_text_alignment(statusTextLayer, GTextAlignmentLeft);
-	text_layer_set_font(statusTextLayer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
+	text_layer_set_font(statusTextLayer, font);
 	layer_add_child( window_layer, text_layer_get_layer( statusTextLayer ) );
+	
+	set_status_ready();
 	
 	init_app_message();
 	
