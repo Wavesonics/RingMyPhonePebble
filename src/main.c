@@ -33,7 +33,8 @@ void set_status_ready()
 {
 	const char * const STATUS_READY = "Ready";
 #if defined(PBL_COLOR)
-	text_layer_set_text_color(statusTextLayer, GColorLimerick);
+	//text_layer_set_text_color(statusTextLayer, GColorFromRGB(0, 255, 0));
+	window_set_background_color(window, GColorFromRGB(0, 255, 0));
 #endif
 	text_layer_set_text(statusTextLayer, STATUS_READY);
 }
@@ -42,7 +43,8 @@ void set_status_ringing()
 {
 	const char * const STATUS_RINGING = "Ringing";
 #if defined(PBL_COLOR)
-	text_layer_set_text_color(statusTextLayer, GColorOrange);
+	//text_layer_set_text_color(statusTextLayer, GColorOrange);
+	window_set_background_color(window, GColorOrange);
 #endif
 	text_layer_set_text(statusTextLayer, STATUS_RINGING);
 }
@@ -51,7 +53,8 @@ void set_status_silencing()
 {
 	const char * const STATUS_SILENCING = "Silencing";
 #if defined(PBL_COLOR)
-	text_layer_set_text_color(statusTextLayer, GColorLiberty);
+	//text_layer_set_text_color(statusTextLayer, GColorFromRGB(0, 0, 255));
+	window_set_background_color(window, GColorFromRGB(0, 0, 255));
 #endif
 	text_layer_set_text(statusTextLayer, STATUS_SILENCING);
 }
@@ -60,7 +63,8 @@ void set_status_failed()
 {
 	const char * const STATUS_FAILED = "Failed :(";
 #if defined(PBL_COLOR)
-	text_layer_set_text_color(statusTextLayer, GColorRed);
+	//text_layer_set_text_color(statusTextLayer, GColorFromRGB(255, 0, 0));
+	window_set_background_color(window, GColorFromRGB(255, 0, 0));
 #endif
 	text_layer_set_text(statusTextLayer, STATUS_FAILED);
 }
@@ -208,6 +212,8 @@ void handle_init()
 	text_layer_set_text(statusTextLayer, "---");
 	text_layer_set_text_alignment(statusTextLayer, GTextAlignmentLeft);
 	text_layer_set_font(statusTextLayer, font);
+	text_layer_set_text_color(statusTextLayer, GColorWhite);
+	text_layer_set_background_color(statusTextLayer, GColorClear);
 	layer_add_child( window_layer, text_layer_get_layer( statusTextLayer ) );
 	
 	set_status_ready();
